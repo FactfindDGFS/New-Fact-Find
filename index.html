@@ -300,6 +300,73 @@
             text-align: right;
         }
 
+        .upload-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px dashed #6c757d;
+        }
+
+        .upload-area {
+            margin-bottom: 20px;
+        }
+
+        .upload-box {
+            border: 2px dashed #ff6b35;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 107, 53, 0.05);
+        }
+
+        .upload-box:hover {
+            background: rgba(255, 107, 53, 0.1);
+            border-color: #e55a2b;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .uploaded-files {
+            margin-top: 15px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-status {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            color: white;
+        }
+
+        .status-uploaded { background: #6c757d; }
+        .status-processing { background: #ffa500; }
+        .status-processed { background: #4CAF50; }
+
+        .ai-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
         @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
@@ -335,6 +402,38 @@
             </div>
         </div>
 
+        <!-- Document Upload Section -->
+        <div class="section upload-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title">
+                    📁 Document Upload
+                    <span class="priority-badge priority-medium">AI Ready</span>
+                </div>
+                <div class="section-status">
+                    <span class="status-indicator status-partial"></span>
+                    <span>Ready</span>
+                    <span>▼</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="upload-area">
+                    <input type="file" id="transcriptUpload" accept=".txt,.docx,.pdf" multiple style="display: none;">
+                    <div class="upload-box" onclick="document.getElementById('transcriptUpload').click()">
+                        <div class="upload-icon">📄</div>
+                        <p><strong>Click to upload transcripts & documents</strong></p>
+                        <small>Supports: .txt, .docx, .pdf files</small>
+                    </div>
+                    <div id="uploadedFiles" class="uploaded-files"></div>
+                </div>
+                <div class="ai-actions">
+                    <button class="btn btn-primary" onclick="processDocuments()" id="processBtn" disabled>
+                        🤖 Extract Data from Documents
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearUploads()">Clear All</button>
+                </div>
+            </div>
+        </div>
+
         <div class="expand-all">
             <button class="btn btn-secondary" onclick="toggleAllSections()">Expand All Sections</button>
         </div>
@@ -356,11 +455,11 @@
                 <div class="form-row">
                     <div>
                         <label>Adviser Name</label>
-                        <input type="text" class="ai-field" placeholder="AI can extract from meeting notes">
+                        <input type="text" class="ai-field" data-ai-field="adviser-name" placeholder="AI can extract from meeting notes">
                     </div>
                     <div>
                         <label>Date & Location</label>
-                        <input type="text" class="ai-field" placeholder="AI can extract from meeting notes">
+                        <input type="text" class="ai-field" data-ai-field="meeting-date" placeholder="AI can extract from meeting notes">
                     </div>
                 </div>
                 <div class="form-row single">
@@ -458,7 +557,7 @@
                     <div>
                         <h4>Client 1</h4>
                         <label>Full Name</label>
-                        <input type="text" class="ai-field required-field" placeholder="AI extracts from documents">
+                        <input type="text" class="ai-field required-field" data-ai-field="client1-name" placeholder="AI extracts from documents">
                         
                         <label>Date of Birth</label>
                         <input type="date" class="ai-field required-field">
@@ -467,7 +566,7 @@
                         <input type="text" class="ai-field" placeholder="AI extracts if provided">
                         
                         <label>Employment Status</label>
-                        <select class="ai-field required-field">
+                        <select class="ai-field required-field" data-ai-field="client1-employment">
                             <option>Employed</option>
                             <option>Self-employed</option>
                             <option>Retired</option>
@@ -524,7 +623,7 @@
                 <div class="form-row">
                     <div>
                         <label>Client 1 - Gross Employment Income</label>
-                        <input type="number" class="ai-field required-field" placeholder="£ - AI extracts from payslips">
+                        <input type="number" class="ai-field required-field" data-ai-field="client1-income" placeholder="£ - AI extracts from payslips">
                         
                         <label>Client 1 - Other Income</label>
                         <input type="number" class="ai-field" placeholder="£ - Investments, rental, etc.">
@@ -542,7 +641,7 @@
                 <div class="form-row">
                     <div>
                         <label>Housing Costs (Mortgage/Rent)</label>
-                        <input type="number" class="ai-field required-field" placeholder="£ - AI extracts from bank statements">
+                        <input type="number" class="ai-field required-field" data-ai-field="housing-costs" placeholder="£ - AI extracts from bank statements">
                         
                         <label>Household Bills</label>
                         <input type="number" class="ai-field" placeholder="£ - Utilities, council tax, etc.">
@@ -747,6 +846,116 @@
 
         function generateReport() {
             alert('Generating comprehensive fact find report with compliance markers...');
+        }
+
+        // File upload functionality
+        let uploadedFiles = [];
+
+        document.getElementById('transcriptUpload').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                uploadedFiles.push({
+                    file: file,
+                    name: file.name,
+                    size: file.size,
+                    status: 'uploaded'
+                });
+            });
+            displayUploadedFiles();
+            document.getElementById('processBtn').disabled = uploadedFiles.length === 0;
+        });
+
+        function displayUploadedFiles() {
+            const container = document.getElementById('uploadedFiles');
+            container.innerHTML = '';
+            
+            uploadedFiles.forEach((fileObj, index) => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'file-item';
+                fileDiv.innerHTML = `
+                    <div class="file-info">
+                        <span>📄</span>
+                        <span>${fileObj.name}</span>
+                        <span class="file-status status-${fileObj.status}">${fileObj.status}</span>
+                    </div>
+                    <button onclick="removeFile(${index})" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;">Remove</button>
+                `;
+                container.appendChild(fileDiv);
+            });
+        }
+
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            displayUploadedFiles();
+            document.getElementById('processBtn').disabled = uploadedFiles.length === 0;
+        }
+
+        function clearUploads() {
+            uploadedFiles = [];
+            document.getElementById('uploadedFiles').innerHTML = '';
+            document.getElementById('transcriptUpload').value = '';
+            document.getElementById('processBtn').disabled = true;
+        }
+
+        async function processDocuments() {
+            if (uploadedFiles.length === 0) {
+                alert('Please upload some documents first.');
+                return;
+            }
+
+            // Update status to processing
+            uploadedFiles.forEach(file => file.status = 'processing');
+            displayUploadedFiles();
+            
+            const processBtn = document.getElementById('processBtn');
+            processBtn.disabled = true;
+            processBtn.textContent = '🤖 Processing...';
+
+            try {
+                // This is where you'd integrate with Claude API
+                // For now, we'll simulate processing and show what would happen
+                await simulateAIProcessing();
+                
+                // Update status to processed
+                uploadedFiles.forEach(file => file.status = 'processed');
+                displayUploadedFiles();
+                
+                alert('AI processing complete! Check the form fields for extracted data.');
+                
+            } catch (error) {
+                console.error('Processing failed:', error);
+                alert('Processing failed. Please try again.');
+            } finally {
+                processBtn.disabled = false;
+                processBtn.textContent = '🤖 Extract Data from Documents';
+            }
+        }
+
+        async function simulateAIProcessing() {
+            // Simulate AI processing delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Simulate populating fields with extracted data
+            const sampleData = {
+                'adviser-name': 'John Smith',
+                'meeting-date': '2025-01-15',
+                'client1-name': 'Jane Doe',
+                'client1-employment': 'Employed',
+                'client1-income': '45000',
+                'housing-costs': '1200'
+            };
+            
+            // Find and populate fields
+            Object.entries(sampleData).forEach(([fieldId, value]) => {
+                const field = document.querySelector(`[data-ai-field="${fieldId}"]`);
+                if (field) {
+                    field.value = value;
+                    field.style.background = '#e8f5e8'; // Highlight AI-populated fields
+                }
+            });
+            
+            // Show demo message
+            alert(`Demo: AI would extract data like:\n- Client Name: Jane Doe\n- Income: £45,000\n- Housing Costs: £1,200\n\nIn production, this would connect to Claude API for real extraction.`);
         }
 
         // Initialize collapsed sections
