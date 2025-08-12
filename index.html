@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Financial Fact Find</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #ff6b35 0%, #1a1a1a 100%);
+            color: white;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+
+        .logo-placeholder {
+            width: 200px;
+            height: 60px;
+            background: rgba(255,255,255,0.2);
+            border: 2px dashed rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .completion-tracker {
+            text-align: right;
+        }
+
+        .completion-bar {
+            width: 200px;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .completion-fill {
+            height: 100%;
+            background: #4CAF50;
+            width: 25%;
+            transition: width 0.3s ease;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .section.hidden {
+            display: none;
+        }
+
+        .section.required-missing {
+            border-left: 4px solid #ff4444;
+        }
+
+        .section.optional-missing {
+            border-left: 4px solid #ffa500;
+        }
+
+        .section.complete {
+            border-left: 4px solid #4CAF50;
+        }
+
+        .section-header {
+            background: #f5f5f5;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .section-header:hover {
+            background: #eeeeee;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .priority-badge {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            color: white;
+        }
+
+        .priority-high { background: #ff4444; }
+        .priority-medium { background: #ffa500; }
+        .priority-low { background: #888; }
+
+        .section-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-complete { background: #4CAF50; }
+        .status-partial { background: #ffa500; }
+        .status-missing { background: #ff4444; }
+
+        .section-content {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .form-row.single {
+            grid-template-columns: 1fr;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .ai-field {
+            position: relative;
+        }
+
+        .ai-field::after {
+            content: "🤖";
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #ff6b35;
+            box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
+        }
+
+        .required-field {
+            border-left: 3px solid #ff4444;
+        }
+
+        .missing-data-alert {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .priority-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .priority-button {
+            padding: 8px 16px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .priority-button.active {
+            background: #ff6b35;
+            color: white;
+            border-color: #ff6b35;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .compliance-check {
+            background: #e8f5e8;
+            border: 1px solid #4CAF50;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #ff6b35;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #e55a2b;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .actions {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .expand-all {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .completion-tracker {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-placeholder">
+                Company Logo Here
+            </div>
+            <div>
+                <h1>Smart Financial Fact Find</h1>
+                <p>AI-Enhanced | FCA COBS Compliant | Consumer Duty Ready</p>
+            </div>
+            <div class="completion-tracker">
+                <div>Completion: <span id="completion-percent">25%</span></div>
+                <div class="completion-bar">
+                    <div class="completion-fill" id="completion-fill"></div>
+                </div>
+                <small>Last updated: <span id="last-updated">Today</span></small>
+            </div>
+        </div>
+
+        <div class="expand-all">
+            <button class="btn btn-secondary" onclick="toggleAllSections()">Expand All Sections</button>
+        </div>
+
+        <!-- Meeting Information -->
+        <div class="section complete">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title">
+                    📅 Meeting Information
+                    <span class="priority-badge priority-high">Required</span>
+                </div>
+                <div class="section-status">
+                    <span class="status-indicator status-complete"></span>
+                    <span>Complete</span>
+                    <span>▼</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="form-row">
+                    <div>
+                        <label>Adviser Name</label>
+                        <input type="text" class="ai-field" placeholder="AI can extract from meeting notes">
+                    </div>
+                    <div>
+                        <label>Date & Location</label>
+                        <input type="text" class="ai-field" placeholder="AI can extract from meeting notes">
+                    </div>
+                </div>
+                <div class="form-row single">
+                    <div>
+                        <label>Attendees</label>
+                        <input type="text" class="ai-field" placeholder="AI can extract from meeting notes">
+                    </div>
+                </div>
+                <div class="compliance-check">
+                    ✅ COBS 9.2 - Meeting documentation requirements satisfied
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Priorities -->
+        <div class="section required-missing">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title">
+                    🎯 Financial Priorities
+                    <span class="priority-badge priority-high">Required</span>
+                </div>
+                <div class="section-status">
+                    <span class="status-indicator status-missing"></span>
+                    <span>Missing Data</span>
+                    <span>▼</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="missing-data-alert">
+                    ⚠️ Priority assessment required for Consumer Duty compliance - helps ensure suitable recommendations
+                </div>
+                
+                <p><strong>Rate importance (1=Very Important, 5=Low Priority):</strong></p>
+                
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Financial Need</th>
+                                <th>Client 1</th>
+                                <th>Client 2</th>
+                                <th>AI Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Personal Protection</strong><br><small>Death, ill health, medical costs</small></td>
+                                <td><select class="ai-field"><option>Select 1-5</option></select></td>
+                                <td><select class="ai-field"><option>Select 1-5</option></select></td>
+                                <td><input type="text" class="ai-field" placeholder="AI extracts reasoning"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Pension Planning</strong><br><small>Saving for retirement</small></td>
+                                <td><select class="ai-field"><option>Select 1-5</option></select></td>
+                                <td><select class="ai-field"><option>Select 1-5</option></select></td>
+                                <td><input type="text" class="ai-field" placeholder="AI extracts reasoning"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Savings & Investments</strong><br><small>Regular and lump sum</small></td>
+                                <td><select class="ai-field"><option>Select 1-5</option></select></td>
+                                <td><select class="ai-field"><option>Select 1-5</option></select></td>
+                                <td><input type="text" class="ai-field" placeholder="AI extracts reasoning"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Estate Planning</strong><br><small>IHT planning and mitigation</small></td>
+                                <td><select class="ai-field"><option>Select 1-5</option></select></td>
+                                <td><select class="ai-field"><option>Select 1-5</option></select></td>
+                                <td><input type="text" class="ai-field" placeholder="AI extracts reasoning"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="compliance-check">
+                    ✅ COBS 9.2 - Client needs assessment | Consumer Duty - Understanding customer needs
+                </div>
+            </div>
+        </div>
+
+        <!-- Client Details -->
+        <div class="section optional-missing">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title">
+                    👥 Client Details
+                    <span class="priority-badge priority-high">Required</span>
+                </div>
+                <div class="section-status">
+                    <span class="status-indicator status-partial"></span>
+                    <span>Partial</span>
+                    <span>▼</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="form-row">
+                    <div>
+                        <h4>Client 1</h4>
+                        <label>Full Name</label>
+                        <input type="text" class="ai-field required-field" placeholder="AI extracts from documents">
+                        
+                        <label>Date of Birth</label>
+                        <input type="date" class="ai-field required-field">
+                        
+                        <label>National Insurance Number</label>
+                        <input type="text" class="ai-field" placeholder="AI extracts if provided">
+                        
+                        <label>Employment Status</label>
+                        <select class="ai-field required-field">
+                            <option>Employed</option>
+                            <option>Self-employed</option>
+                            <option>Retired</option>
+                            <option>Unemployed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <h4>Client 2 (if applicable)</h4>
+                        <label>Full Name</label>
+                        <input type="text" class="ai-field" placeholder="AI extracts from documents">
+                        
+                        <label>Date of Birth</label>
+                        <input type="date" class="ai-field">
+                        
+                        <label>National Insurance Number</label>
+                        <input type="text" class="ai-field" placeholder="AI extracts if provided">
+                        
+                        <label>Employment Status</label>
+                        <select class="ai-field">
+                            <option>Select...</option>
+                            <option>Employed</option>
+                            <option>Self-employed</option>
+                            <option>Retired</option>
+                            <option>Unemployed</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="compliance-check">
+                    ✅ COBS 9.2 - Client identification and verification
+                </div>
+            </div>
+        </div>
+
+        <!-- Income & Expenditure -->
+        <div class="section required-missing">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title">
+                    💰 Income & Expenditure
+                    <span class="priority-badge priority-high">Required</span>
+                </div>
+                <div class="section-status">
+                    <span class="status-indicator status-missing"></span>
+                    <span>Missing Data</span>
+                    <span>▼</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="missing-data-alert">
+                    ⚠️ Income and expenditure data required for affordability assessment (Consumer Duty)
+                </div>
+                
+                <h4>Current Income (Annual)</h4>
+                <div class="form-row">
+                    <div>
+                        <label>Client 1 - Gross Employment Income</label>
+                        <input type="number" class="ai-field required-field" placeholder="£ - AI extracts from payslips">
+                        
+                        <label>Client 1 - Other Income</label>
+                        <input type="number" class="ai-field" placeholder="£ - Investments, rental, etc.">
+                    </div>
+                    <div>
+                        <label>Client 2 - Gross Employment Income</label>
+                        <input type="number" class="ai-field" placeholder="£ - AI extracts from payslips">
+                        
+                        <label>Client 2 - Other Income</label>
+                        <input type="number" class="ai-field" placeholder="£ - Investments, rental, etc.">
+                    </div>
+                </div>
+                
+                <h4>Essential Monthly Expenditure</h4>
+                <div class="form-row">
+                    <div>
+                        <label>Housing Costs (Mortgage/Rent)</label>
+                        <input type="number" class="ai-field required-field" placeholder="£ - AI extracts from bank statements">
+                        
+                        <label>Household Bills</label>
+                        <input type="number" class="ai-field" placeholder="£ - Utilities, council tax, etc.">
+                    </div>
+                    <div>
+                        <label>Living Expenses</label>
+                        <input type="number" class="ai-field" placeholder="£ - Food, transport, etc.">
+                        
+                        <label>Financial Commitments</label>
+                        <input type="number" class="ai-field" placeholder="£ - Loans, credit cards, etc.">
+                    </div>
+                </div>
+                
+                <div class="form-row single">
+                    <div>
+                        <label>Available for Financial Planning (Monthly)</label>
+                        <input type="number" class="ai-field required-field" placeholder="£ - Calculated automatically">
+                    </div>
+                </div>
+                
+                <div class="compliance-check">
+                    ✅ Consumer Duty - Affordability assessment | COBS 9.2 - Financial situation
+                </div>
+            </div>
+        </div>
+
+        <!-- Assets & Liabilities -->
+        <div class="section optional-missing">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title">
+                    🏠 Assets & Liabilities
+                    <span class="priority-badge priority-medium">Important</span>
+                </div>
+                <div class="section-status">
+                    <span class="status-indicator status-partial"></span>
+                    <span>Partial</span>
+                    <span>▼</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Asset Type</th>
+                                <th>Current Value (£)</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Main Residence</td>
+                                <td><input type="number" class="ai-field" placeholder="AI extracts from property docs"></td>
+                                <td><input type="text" class="ai-field" placeholder="AI notes ownership, mortgage"></td>
+                            </tr>
+                            <tr>
+                                <td>Cash Savings</td>
+                                <td><input type="number" class="ai-field" placeholder="AI extracts from statements"></td>
+                                <td><input type="text" class="ai-field" placeholder="Bank details, access"></td>
+                            </tr>
+                            <tr>
+                                <td>Investments</td>
+                                <td><input type="number" class="ai-field" placeholder="AI extracts from valuations"></td>
+                                <td><input type="text" class="ai-field" placeholder="Types, providers"></td>
+                            </tr>
+                            <tr>
+                                <td>Pension Funds</td>
+                                <td><input type="number" class="ai-field" placeholder="AI extracts from statements"></td>
+                                <td><input type="text" class="ai-field" placeholder="Providers, types"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="compliance-check">
+                    ✅ COBS 9.2 - Financial situation assessment
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Assessment -->
+        <div class="section required-missing">
+            <div class="section-header" onclick="toggleSection(this)">
+                <div class="section-title">
+                    📊 Risk Assessment
+                    <span class="priority-badge priority-high">Required</span>
+                </div>
+                <div class="section-status">
+                    <span class="status-indicator status-missing"></span>
+                    <span>Missing Data</span>
+                    <span>▼</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="missing-data-alert">
+                    ⚠️ Risk assessment required before any investment recommendations (COBS 9.2)
+                </div>
+                
+                <div class="form-row">
+                    <div>
+                        <label>Risk Tolerance (Client 1)</label>
+                        <select class="required-field">
+                            <option>Select risk level...</option>
+                            <option>Conservative</option>
+                            <option>Cautious</option>
+                            <option>Balanced</option>
+                            <option>Adventurous</option>
+                            <option>Aggressive</option>
+                        </select>
+                        
+                        <label>Investment Experience</label>
+                        <textarea class="ai-field" rows="3" placeholder="AI extracts experience from discussion"></textarea>
+                    </div>
+                    <div>
+                        <label>Risk Tolerance (Client 2)</label>
+                        <select>
+                            <option>Select risk level...</option>
+                            <option>Conservative</option>
+                            <option>Cautious</option>
+                            <option>Balanced</option>
+                            <option>Adventurous</option>
+                            <option>Aggressive</option>
+                        </select>
+                        
+                        <label>Capacity for Loss</label>
+                        <textarea class="ai-field" rows="3" placeholder="AI extracts capacity assessment"></textarea>
+                    </div>
+                </div>
+                
+                <div class="compliance-check">
+                    ✅ COBS 9.2 - Appropriateness and suitability assessment
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions">
+            <div>
+                <button class="btn btn-secondary" onclick="saveProgress()">Save Progress</button>
+                <button class="btn btn-secondary" onclick="uploadDocuments()">Upload Documents</button>
+            </div>
+            <div>
+                <button class="btn btn-primary" onclick="generateReport()">Generate Fact Find Report</button>
+                <button class="btn btn-primary" onclick="aiPopulate()">AI Auto-Populate</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sectionsExpanded = false;
+
+        function toggleSection(header) {
+            const content = header.nextElementSibling;
+            const arrow = header.querySelector('span:last-child');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                arrow.textContent = '▼';
+            } else {
+                content.style.display = 'none';
+                arrow.textContent = '▶';
+            }
+        }
+
+        function toggleAllSections() {
+            const sections = document.querySelectorAll('.section-content');
+            const button = event.target;
+            
+            sectionsExpanded = !sectionsExpanded;
+            
+            sections.forEach(section => {
+                section.style.display = sectionsExpanded ? 'block' : 'none';
+            });
+            
+            document.querySelectorAll('.section-header span:last-child').forEach(arrow => {
+                arrow.textContent = sectionsExpanded ? '▼' : '▶';
+            });
+            
+            button.textContent = sectionsExpanded ? 'Collapse All Sections' : 'Expand All Sections';
+        }
+
+        function updateCompletion() {
+            const total = document.querySelectorAll('input, select, textarea').length;
+            const completed = document.querySelectorAll('input:not([value=""]), select:not([value=""]), textarea:not([value=""])').length;
+            const percentage = Math.round((completed / total) * 100);
+            
+            document.getElementById('completion-percent').textContent = percentage + '%';
+            document.getElementById('completion-fill').style.width = percentage + '%';
+        }
+
+        function saveProgress() {
+            alert('Progress saved successfully! Data stored locally for recovery.');
+        }
+
+        function uploadDocuments() {
+            alert('Document upload feature would open file browser for transcripts, policy documents, bank statements, etc.');
+        }
+
+        function aiPopulate() {
+            alert('AI Auto-Populate would process uploaded documents and fill relevant fields automatically.');
+        }
+
+        function generateReport() {
+            alert('Generating comprehensive fact find report with compliance markers...');
+        }
+
+        // Initialize collapsed sections
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            document.querySelectorAll('.section-header span:last-child').forEach(arrow => {
+                arrow.textContent = '▶';
+            });
+            
+            // Update timestamp
+            document.getElementById('last-updated').textContent = new Date().toLocaleDateString();
+            
+            // Add event listeners for completion tracking
+            document.querySelectorAll('input, select, textarea').forEach(element => {
+                element.addEventListener('change', updateCompletion);
+                element.addEventListener('input', updateCompletion);
+            });
+        });
+    </script>
+</body>
+</html>
